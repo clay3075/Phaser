@@ -1,0 +1,227 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Pong</title>
+        <script src="../phaser.min.js"></script>
+    </head>
+    <body>
+        <script>
+
+        var config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { x: 0, y:0 },
+                    debug: false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        var game = new Phaser.Game(config);
+        var gameActive = false;
+        var paused = false;
+        var gameOver = false;
+        var scoreLeft = 0;
+        var scoreRight = 0;
+
+        const W = 87;
+        const S = 83;
+        const ENTER = 13;
+        const BALL_SPEED = 400;
+        const WINNING_SCORE = 10;
+        const GAME_WIDTH = 800;
+        const GAME_HEIGHT = 600;
+
+        
+
+        function preload() {
+
+            this.load.image('ball', './ball.png');
+            this.load.image('paddleLeft', './paddle.png');
+            this.load.image('paddleRight', './paddle.png');
+
+        }
+
+        function create() {
+            console.log(this.input.activePointer)
+            this.cursorsRight = this.input.keyboard.createCursorKeys();
+            this.cursorsLeft = {
+                up: this.input.keyboard.addKey(W),
+                down: this.input.keyboard.addKey(S),
+            };
+            this.pongBall = this.physics.add.sprite(GAME_WIDTH/2, GAME_HEIGHT/2, 'ball');
+            this.pongBall.setScale(.5);
+            this.pongBall.setBounce(1);
+            this.pongBall.setCollideWorldBounds(true);
+            this.leftPaddel = this.physics.add.sprite(11, GAME_HEIGHT/2, 'paddleLeft');
+            this.leftPaddel.setBounce(1);
+            this.leftPaddel.body.immovable = true;
+            this.leftPaddel.setCollideWorldBounds(true);
+            this.rightPaddel = this.physics.add.sprite(GAME_WIDTH, GAME_HEIGHT/2, 'paddleRight');
+            this.rightPaddel.setBounce(1);
+            this.rightPaddel.body.immovable = true;
+            this.rightPaddel.setCollideWorldBounds(true);
+            this.physics.add.collider(this.pongBall, this.leftPaddel);
+            this.physics.add.collider(this.pongBall, this.rightPaddel);
+            this.scoreLeftText = this.add.text(45,45, 'Score: ' + scoreLeft);
+            this.scoreRightText = this.add.text(GAME_WIDTH-145, 45, 'Score: ' + scoreRight);
+            this.enterToStartMessage = this.add.text(GAME_WIDTH*.39, GAME_HEIGHT/2, 'Enter/Touch To Start');
+            this.gameOverText = this.add.text(GAME_WIDTH*.3835, GAME_HEIGHT*.40, 'Game Over', {fontWeight:'bold', fontSize:35});
+            this.gameTitleText = this.add.text(GAME_WIDTH*.406, GAME_HEIGHT*.38, 'PONG', {fontWeight:'bold', fontSize:65})
+            hideGameItems(this);
+        }
+
+        function touchMovePaddles(gameContext) {
+            if (gameContext.input.activePointer.isDown) {
+                if (gameContext.input.activePointer.x > GAME_WIDTH/2 && gameContext.input.activePointer.y > GAME_HEIGHT/2) {
+                    gameContext.rightPaddel.setVelocityY(BALL_SPEED);
+                } else if (gameContext.input.activePointer.x > GAME_WIDTH/2 && gameContext.input.activePointer.y < GAME_HEIGHT/2) {
+                    gameContext.rightPaddel.setVelocityY(-BALL_SPEED);
+                } else if (gameContext.input.activePointer.x < GAME_WIDTH/2 && gameContext.input.activePointer.y < GAME_HEIGHT/2) {
+                    gameContext.leftPaddel.setVelocityY(-BALL_SPEED);
+                } else if (gameContext.input.activePointer.x < GAME_WIDTH/2 && gameContext.input.activePointer.y > GAME_HEIGHT/2) {
+                    gameContext.leftPaddel.setVelocityY(BALL_SPEED);
+                } else {
+                    gameContext.leftPaddel.setVelocityY(0);
+                    gameContext.rightPaddel.setVelocityY(0);
+                }
+            }
+        }
+
+        function initNewGame(gameContext) {
+            hideGameItems(gameContext);
+            scoreLeft = 0;
+            scoreRight = 0;
+            gameContext.scoreLeftText.setText('Score: ' + scoreLeft);
+            gameContext.scoreRightText.setText('Score: ' + scoreRight);
+            paused = false;
+            gameActive = true;
+            gameOver = false;
+            gameContext.pongBall.setVelocityX(0);
+            gameContext.pongBall.setVelocityY(0);
+            gameContext.pongBall.x = GAME_WIDTH/2;
+            gameContext.pongBall.y = GAME_HEIGHT/2;
+            gameContext.pongBall.visible = true;
+            gameContext.leftPaddel.x = 11;
+            gameContext.leftPaddel.y = GAME_HEIGHT/2;
+            gameContext.leftPaddel.visible = true;
+            gameContext.rightPaddel.x = GAME_WIDTH;
+            gameContext.rightPaddel.y = GAME_HEIGHT/2;
+            gameContext.rightPaddel.visible = true;
+            gameContext.scoreLeftText.visible = true;
+            gameContext.scoreRightText.visible = true;
+            startBall(gameContext);
+        }
+
+        function startBall(gameContext) {
+            var velocityOptions = [BALL_SPEED, -BALL_SPEED];
+            gameContext.pongBall.setVelocityX(velocityOptions[Math.floor(Math.random() * 2)]);
+            gameContext.pongBall.setVelocityY(velocityOptions[Math.floor(Math.random() * 2)]);
+        }
+
+        function hideGameItems(gameContext) {
+            gameContext.pongBall.visible = false;
+            gameContext.leftPaddel.visible = false;
+            gameContext.rightPaddel.visible = false;
+            gameContext.scoreLeftText.visible = false;
+            gameContext.scoreRightText.visible = false;
+            gameContext.enterToStartMessage.visible = false;
+            gameContext.gameOverText.visible = false;
+            gameContext.gameTitleText.visible = false;
+        }
+
+        function update() {
+            if (gameActive && !gameOver) {
+                moveLeftPaddle(this);
+                moveRightPaddle(this);
+                checkForLoss(this);
+                checkForGameOver(this);
+                touchMovePaddles(this);
+                if (paused) 
+                    checkForUnpause(this);
+            } else if (gameOver) {
+                hideGameItems(this);
+                this.gameOverText.visible = true;
+                this.enterToStartMessage.visible = true;
+                if (this.input.keyboard.addKey(ENTER).isDown || this.input.activePointer.isDown)
+                    initNewGame(this);
+            } else {
+                this.gameTitleText.visible = true;
+                checkForPlayGame(this);
+            }
+        }
+
+        function checkForPlayGame(gameContext) {
+            gameContext.enterToStartMessage.visible = true;
+            if (gameContext.input.keyboard.addKey(ENTER).isDown || gameContext.input.activePointer.isDown) {
+                gameActive = true;
+                hideGameItems(gameContext);
+                initNewGame(gameContext);
+            }
+        }
+
+        function checkForGameOver(gameContext) {
+            if (scoreLeft == WINNING_SCORE || scoreRight == WINNING_SCORE)
+                gameOver = true;
+        }
+
+        function checkForUnpause(gameContext) {
+            if (gameContext.input.keyboard.addKey(ENTER).isDown || gameContext.input.activePointer.isDown) {
+                gameContext.enterToStartMessage.visible = false;
+                gameContext.pongBall.visible = true;
+                startBall(gameContext);
+                paused = false;
+            }
+        }
+
+        function moveRightPaddle(gameContext) {
+
+            if (gameContext.cursorsRight.up.isDown) {
+                gameContext.rightPaddel.setVelocityY(-BALL_SPEED);
+            } else if (gameContext.cursorsRight.down.isDown) {
+                gameContext.rightPaddel.setVelocityY(BALL_SPEED);
+            } else {
+                gameContext.rightPaddel.setVelocityY(0);
+            }
+        }
+
+        function moveLeftPaddle(gameContext) {
+            if (gameContext.cursorsLeft.up.isDown) {
+                gameContext.leftPaddel.setVelocityY(-BALL_SPEED);
+            } else if (gameContext.cursorsLeft.down.isDown) {
+                gameContext.leftPaddel.setVelocityY(BALL_SPEED);
+            } else {
+                gameContext.leftPaddel.setVelocityY(0);
+            }
+        }
+
+        function checkForLoss(gameContext) {
+            if (gameContext.pongBall.body.onWall()) {
+                if (gameContext.pongBall.x > GAME_WIDTH/2) {
+                    scoreRight += 1;
+                    gameContext.scoreRightText.setText("Score: " + scoreRight); 
+                } else {
+                    scoreLeft += 1;
+                    gameContext.scoreLeftText.setText("Score: " + scoreLeft); 
+                }
+                gameContext.pongBall.visible = false;
+                gameContext.pongBall.setVelocityX(0);
+                gameContext.pongBall.setVelocityY(0);
+                gameContext.pongBall.x = GAME_WIDTH/2;  
+                gameContext.pongBall.y = GAME_HEIGHT/2;
+                gameContext.enterToStartMessage.visible = true;
+                paused = true;
+            }
+        }
+
+        </script>
+    </body>
+</html>
