@@ -9,8 +9,8 @@
 
         var config = {
             type: Phaser.AUTO,
-            width: 800,
-            height: 600,
+            width: 1024,
+            height: 768,
             physics: {
                 default: 'arcade',
                 arcade: {
@@ -37,8 +37,8 @@
         const ENTER = 13;
         const BALL_SPEED = 400;
         const WINNING_SCORE = 10;
-        const GAME_WIDTH = 800;
-        const GAME_HEIGHT = 600;
+        const GAME_WIDTH = 1024;
+        const GAME_HEIGHT = 768;
 
         
 
@@ -65,7 +65,7 @@
             this.leftPaddel.setBounce(1);
             this.leftPaddel.body.immovable = true;
             this.leftPaddel.setCollideWorldBounds(true);
-            this.rightPaddel = this.physics.add.sprite(GAME_WIDTH, GAME_HEIGHT/2, 'paddleRight');
+            this.rightPaddel = this.physics.add.sprite(GAME_WIDTH-400, GAME_HEIGHT/2, 'paddleRight');
             this.rightPaddel.setBounce(1);
             this.rightPaddel.body.immovable = true;
             this.rightPaddel.setCollideWorldBounds(true);
